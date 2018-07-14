@@ -4,24 +4,36 @@ from layers.dilated_resnet import PlainBlock
 
 
 class DilatedResNet(nn.Module):
-    def __init__(self, layers):
+    def __init__(self, layers, output_stride=8):
         super(DilatedResNet, self).__init__()
 
         assert len(layers) == 4
+        assert output_stride in [2, 4, 8, 16, 32]
+
+        s1 = 2 if output_stride % 2 == 0 else 1
+        d1 = 2 if s1 == 1 else 1
+        s2 = 2 if output_stride % 4 == 0 else 1
+        d2 = 2*d1 if s2 == 1 else 1
+        s3 = 2 if output_stride % 8 == 0 else 1
+        d3 = 2*d2 if s3 == 1 else 1
+        s4 = 2 if output_stride % 16 == 0 else 1
+        d4 = 2 * d3 if s4 == 1 else 1
+        s5 = 2 if output_stride % 32 == 0 else 1
+        d5 = 2 * d4 if s5 == 1 else 1
 
         # little definition
         conv1 = nn.Conv2d(3, 16,
-                          kernel_size=7, stride=2, padding=3, bias=False)
+                          kernel_size=7, padding=3, bias=False)
         bn1 = nn.BatchNorm2d(16)
         relu = nn.ReLU()
         self.in_channels = 32
 
         self.stage1 = nn.Sequential(conv1, bn1, relu, BasicBlock(self.in_channels, 16))
-        self.stage2 = BasicBlock(16, 32, stride=2)
-        self.stage3 = self.conv_stage(BasicBlock, 64,  layers[0], 2)
-        self.stage4 = self.conv_stage(BasicBlock, 128, layers[1], 2)
-        self.stage5 = self.conv_stage(BasicBlock, 256, layers[2], dilation=2)
-        self.stage6 = self.conv_stage(BasicBlock, 512, layers[3], dilation=4)
+        self.stage2 = BasicBlock(16, 32, stride=s1, dilation=d1)
+        self.stage3 = self.conv_stage(BasicBlock, 64,  layers[0], s2, d2)
+        self.stage4 = self.conv_stage(BasicBlock, 128, layers[1], s3, d3)
+        self.stage5 = self.conv_stage(BasicBlock, 256, layers[2], s4, d4)
+        self.stage6 = self.conv_stage(BasicBlock, 512, layers[3], s5, d5)
         self.stage7 = PlainBlock(self.in_channels, 512, dilation=2)
         self.stage8 = PlainBlock(self.in_channels, 512)
 
