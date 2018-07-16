@@ -6,7 +6,7 @@ class DepthwiseSeparableConv(nn.Module):
         super(DepthwiseSeparableConv, self).__init__()
 
         self.depthwise = nn.Conv2d(in_channels, in_channels, 3,
-                                   stride=stride, padding=1, dilation=dilation, groups=in_channels, bias=False)
+                                   stride=stride, padding=dilation, dilation=dilation, groups=in_channels, bias=False)
         self.separable = nn.Conv2d(in_channels, out_channels, 1, bias=False)
 
         self.bn1 = nn.BatchNorm2d(in_channels)

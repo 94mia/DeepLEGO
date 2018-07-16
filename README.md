@@ -28,3 +28,4 @@ Folder `utils` stores useful LEGO toys like common decoder, ASPP, Vortex Pooling
 |------|----------------|
 | 7.13 | Repository Setup |
 | 7.14 | add ResNet backbone, add Dilated ResNet backbone |
+| 7.16 | add Xception backbone, ASPP, ASPP+, cityscapes dataset |

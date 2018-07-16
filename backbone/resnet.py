@@ -25,7 +25,7 @@ class ResNet(nn.Module):
                           kernel_size=7, stride=s1, padding=3, dilation=d1, bias=False)
         bn1 = nn.BatchNorm2d(64)
         relu = nn.ReLU()
-        max_pool = nn.MaxPool2d(kernel_size=3, stride=s2, padding=1, dilation=d2)
+        max_pool = nn.MaxPool2d(kernel_size=3, stride=s2, padding=d2, dilation=d2)
         self.in_channels = 64
 
         self.stage1 = nn.Sequential(conv1, bn1, relu, max_pool)
@@ -76,40 +76,40 @@ class ResNet(nn.Module):
         return logits
 
 
-def ResNet18():
+def ResNet18(output_stride=32):
     """
     Construct a ResNet-18 model
     """
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+    return ResNet(BasicBlock, [2, 2, 2, 2], output_stride)
 
 
-def ResNet34():
+def ResNet34(output_stride=32):
     """
     Construct a ResNet-34 model
     """
-    return ResNet(BasicBlock, [3, 4, 6, 3])
+    return ResNet(BasicBlock, [3, 4, 6, 3], output_stride)
 
 
-def ResNet50():
+def ResNet50(output_stride=32):
     """
     Construct a ResNet-50 model
     """
-    return ResNet(Bottleneck, [3, 4, 6, 3])
+    return ResNet(Bottleneck, [3, 4, 6, 3], output_stride)
 
 
-def ResNet101():
+def ResNet101(output_stride=32):
     """
     Construct a ResNet-101 model
     """
-    return ResNet(Bottleneck, [3, 4, 23, 3])
+    return ResNet(Bottleneck, [3, 4, 23, 3], output_stride)
 
 
-def ResNet152():
+def ResNet152(output_stride=32):
     """
     Construct a ResNet-152 model
     """
-    return ResNet(Bottleneck, [3, 8, 36, 3])
+    return ResNet(Bottleneck, [3, 8, 36, 3], output_stride)
 
 
 if __name__ == '__main__':
-    print(ResNet18())
+    print(ResNet18(output_stride=16))

@@ -1,5 +1,5 @@
 import torch.nn as nn
-from layers.resnet import conv1x1, conv3x3
+from layers.resnet import conv3x3
 
 
 class PlainBlock(nn.Module):

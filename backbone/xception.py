@@ -22,30 +22,36 @@ class Xception(nn.Module):
 
         # because stride conv in Residual Block is the last conv
         # thus dilation will be set in the next block
-        self.entry = nn.Sequential(conv3x3_bn_relu(3, 32, s1, 1), conv3x3_bn_relu(32, 64),
-                                   ResidualBlock(64, 128, s2, d1),
-                                   ResidualBlock(128, 256, s3, d2),
-                                   ResidualBlock(256, 728, s4, d3))
+        self.entry1 = nn.Sequential(conv3x3_bn_relu(3, 32, s1, 1), conv3x3_bn_relu(32, 64),
+                                    ResidualBlock(64, 128, s2, d1))
+        self.entry2 = ResidualBlock(128, 256, s3, d2)
+        self.entry3 = ResidualBlock(256, 728, s4, d3)
         self.middle = ResidualBlock(728, 728, 1, d4)
         self.exit = nn.Sequential(ResidualBlock(728, 1024, s5, d4),
                                   DepthwiseSeparableConv(1024, 1536, 1, d5),
                                   DepthwiseSeparableConv(1536, 1536, 1, d5),
                                   DepthwiseSeparableConv(1536, 2048, 1, d5))
 
-        def forward(self, x):
-            x = self.entry(x)
-            for _ in range(16):
-                x = self.middle(x)
-            x = self.exit(x)
+    def forward(self, x):
+        logits = []
 
-            return x
+        logits.append(self.entry1(x))
+        logits.append(self.entry2(logits[-1]))
+        logits.append(self.entry3(logits[-1]))
+
+        x = logits[-1]
+        for _ in range(16):
+            x = self.middle(x)
+        logits.append(self.exit(x))
+
+        return logits
 
 
-def Xception65():
+def Xception65(output_stride=16):
     """
     Construct Xception network modified in DeepLabv3+
     """
-    return Xception()
+    return Xception(output_stride)
 
 
 if __name__ == '__main__':

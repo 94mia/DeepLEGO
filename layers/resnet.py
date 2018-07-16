@@ -4,7 +4,7 @@ import torch.nn as nn
 def conv3x3(in_channels, out_channels, stride=1, dilation=1):
     """ 3x3 Convolution with padding and stride """
     return nn.Conv2d(in_channels, out_channels,
-                     kernel_size=3, stride=stride, padding=1, dilation=dilation, bias=False)
+                     kernel_size=3, stride=stride, padding=dilation, dilation=dilation, bias=False)
 
 def conv1x1(in_channels, out_channels, stride=1, dilation=1):
     """ 1x1 Convolution with padding and stride """
@@ -14,7 +14,7 @@ def conv1x1(in_channels, out_channels, stride=1, dilation=1):
 def conv3x3_bn_relu(in_channels, out_channels, stride=1, dilation=1):
     """ 3x3 Convolution with batch norm and relu """
     return nn.Sequential(nn.Conv2d(in_channels, out_channels,
-                                   kernel_size=3, stride=stride, padding=1, dilation=dilation, bias=False),
+                                   kernel_size=3, stride=stride, padding=dilation, dilation=dilation, bias=False),
                          nn.BatchNorm2d(out_channels),
                          nn.ReLU())
 
