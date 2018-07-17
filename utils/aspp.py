@@ -42,7 +42,8 @@ class ASPP(nn.Module):
         self.branch3 = ASPP_branch(in_channels, 18, num_class)
         self.branch4 = ASPP_branch(in_channels, 24, num_class)
 
-    def forward(self, x):
+    def forward(self, logits):
+        x = logits[-1]
 
         x = self.branch1(x) + self.branch2(x) + self.branch3(x) + self.branch4(x)
 

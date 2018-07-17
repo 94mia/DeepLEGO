@@ -33,11 +33,18 @@ class Xception(nn.Module):
                                   DepthwiseSeparableConv(1536, 2048, 1, d5))
 
     def forward(self, x):
+        """
+        Store all intermediate logits when network meets stride
+        """
+
         logits = []
 
-        logits.append(self.entry1(x))
-        logits.append(self.entry2(logits[-1]))
-        logits.append(self.entry3(logits[-1]))
+        x = self.entry1(x)
+        logits.append(x)
+        x = self.entry2(x)
+        logits.append(x)
+        x = self.entry3(x)
+        logits.append(x)
 
         x = logits[-1]
         for _ in range(16):

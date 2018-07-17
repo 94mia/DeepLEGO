@@ -18,9 +18,13 @@ class ASPP_plus(nn.Module):
                                       nn.BatchNorm2d(256))
         self.concate_conv = nn.Sequential(nn.Conv2d(256*5, 256, 1, bias=False),
                                       nn.BatchNorm2d(256))
+        self.class_conv = nn.Sequential(nn.Conv2d(256, self.params.num_class, 1),
+                                        nn.Upsample(scale_factor=self.params.output_stride, mode='bilinear',
+                                                    align_corners=False))
         # self.upsample = nn.Upsample(mode='bilinear', align_corners=True)
 
-    def forward(self, x):
+    def forward(self, logits):
+        x = logits[-1]
         conv11 = self.conv11(x)
         conv33_1 = self.conv33_1(x)
         conv33_2 = self.conv33_2(x)
@@ -33,7 +37,8 @@ class ASPP_plus(nn.Module):
         upsample = nn.Upsample(size=x.size()[2:], mode='bilinear', align_corners=True)
         upsample = upsample(image_pool)
 
-        # concate
-        concate = torch.cat([conv11, conv33_1, conv33_2, conv33_3, upsample], dim=1)
+        # concatenate
+        concatenate = torch.cat([conv11, conv33_1, conv33_2, conv33_3, upsample], dim=1)
+        concatenate = self.concate_conv(concatenate)
 
-        return self.concate_conv(concate)
+        return self.class_conv(concatenate)

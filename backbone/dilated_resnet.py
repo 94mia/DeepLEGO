@@ -66,19 +66,24 @@ class DilatedResNet(nn.Module):
 
     def forward(self, x):
         """
-        Store all the intermediate feature maps
+        Store intermediate feature maps
         """
 
         logits = []
 
-        logits.append(self.stage1(x))
-        logits.append(self.stage2(logits[-1]))
-        logits.append(self.stage3(logits[-1]))
-        logits.append(self.stage4(logits[-1]))
-        logits.append(self.stage5(logits[-1]))
-        logits.append(self.stage6(logits[-1]))
-        logits.append(self.stage7(logits[-1]))
-        logits.append(self.stage8(logits[-1]))
+        x = self.stage1(x)
+        x = self.stage2(x)
+        logits.append(x)
+        x = self.stage3(x)
+        logits.append(x)
+        x = self.stage4(x)
+        logits.append(x)
+        x = self.stage5(x)
+        logits.append(x)
+        x = self.stage6(x)
+        x = self.stage7(x)
+        x = self.stage8(x)
+        logits.append(x)
 
         return logits
 

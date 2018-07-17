@@ -3,7 +3,6 @@ import torch
 from collections import namedtuple
 import numpy as np
 import os
-from utils.functions import generate_txt
 from torch.utils.data import Dataset
 
 """###############"""
@@ -229,3 +228,43 @@ class Cityscapes(Dataset):
             sample = self.transforms(sample)
 
         return sample
+
+
+def generate_txt(dataset_root, file):
+    """
+    Generate txt files that not exists but required in both training and testing
+
+    :param dataset_root: the path to dataset root, eg. '/media/ubuntu/disk/cityscapes'
+    :param file: txt file need to generate
+    """
+    with open(os.path.join(dataset_root, file), 'w') as f:
+        # get mode and folder
+        if 'train' in file:
+            mode = 'train'
+        elif 'test' in file:
+            mode = 'test'
+        else:
+            mode = 'val'
+        folder = 'leftImg8bit' if 'Image' in file else 'gtFine'
+
+        path = os.path.join(os.path.join(dataset_root, folder), mode)
+
+        assert os.path.exists(path), 'Cannot find %s set in folder %s' % (mode, folder)
+
+        # collect images or labels
+        if 'Images' in file:
+            cities = os.listdir(path)
+            for city in cities:
+                # write them into txt
+                for image in os.listdir(os.path.join(path, city)):
+                    print(folder + '/' + mode + '/' + city + '/' + image, file=f)
+        else:
+            image_txt = mode+'Images.txt'
+            if image_txt in os.listdir(dataset_root):
+                for line in open(os.path.join(dataset_root, image_txt)):
+                    line = line.strip()
+                    line = line.replace('leftImg8bit/', 'gtFine/')
+                    line = line.replace('_leftImg8bit', '_gtFine_labelTrainIds')
+                    print(line, file=f)
+            else:
+                generate_txt(dataset_root, image_txt)

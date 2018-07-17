@@ -7,6 +7,10 @@ from torchvision import transforms
 from datasets.cityscapes import Cityscapes
 
 
+WARNING = lambda x: print('\033[1;31;2mWARNING: ' + x + '\033[0m')
+LOG = lambda x: print('\033[0;31;2m' + x + '\033[0m')
+
+
 def create_train_dir(params):
     """
     Create folder used in training, folder hierarchy:
@@ -29,7 +33,7 @@ def create_train_dir(params):
     return summary_dir, checkpoint_dir
 
 
-def create_dataset(params):
+def create_datasets(params):
     """
     Create datasets for training, testing and validating
 
@@ -173,46 +177,6 @@ def print_config(params):
     for name, value in sorted(vars(params).items()):
         print('\t%-20s:%s' % (name, str(value)))
     print('')
-
-
-def generate_txt(dataset_root, file):
-    """
-    Generate txt files that not exists but required in both training and testing
-
-    :param dataset_root: the path to dataset root, eg. '/media/ubuntu/disk/cityscapes'
-    :param file: txt file need to generate
-    """
-    with open(os.path.join(dataset_root, file), 'w') as f:
-        # get mode and folder
-        if 'train' in file:
-            mode = 'train'
-        elif 'test' in file:
-            mode = 'test'
-        else:
-            mode = 'val'
-        folder = 'leftImg8bit' if 'Image' in file else 'gtFine'
-
-        path = os.path.join(os.path.join(dataset_root, folder), mode)
-
-        assert os.path.exists(path), 'Cannot find %s set in folder %s' % (mode, folder)
-
-        # collect images or labels
-        if 'Images' in file:
-            cities = os.listdir(path)
-            for city in cities:
-                # write them into txt
-                for image in os.listdir(os.path.join(path, city)):
-                    print(folder + '/' + mode + '/' + city + '/' + image, file=f)
-        else:
-            image_txt = mode+'Images.txt'
-            if image_txt in os.listdir(dataset_root):
-                for line in open(os.path.join(dataset_root, image_txt)):
-                    line = line.strip()
-                    line = line.replace('leftImg8bit/', 'gtFine/')
-                    line = line.replace('_leftImg8bit', '_gtFine_labelTrainIds')
-                    print(line, file=f)
-            else:
-                generate_txt(dataset_root, image_txt)
 
 
 def generate_zip(dataset_root):

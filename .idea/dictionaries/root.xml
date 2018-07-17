@@ -1,10 +1,17 @@
 <component name="ProjectDictionaryState">
   <dictionary name="root">
     <words>
+      <w>aspp</w>
+      <w>cityscapes</w>
       <w>conv</w>
+      <w>convolutional</w>
+      <w>dataloader</w>
+      <w>dataset</w>
+      <w>datasets</w>
       <w>depthwise</w>
       <w>logits</w>
       <w>relu</w>
+      <w>upsample</w>
       <w>xception</w>
     </words>
   </dictionary>
