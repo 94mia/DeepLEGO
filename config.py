@@ -30,7 +30,7 @@ class Params():
         self.should_val = True
         self.val_every = 2
         self.display = 1  # show train result every display epoch
-        self.should_split = True  # should split training procedure into several parts
+        self.should_split = False  # should split training procedure into several parts
         self.split = 2  # number of split
 
         # model restore parameters

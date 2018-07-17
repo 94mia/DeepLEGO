@@ -9,9 +9,13 @@ from torch.utils.checkpoint import checkpoint_sequential
 
 from utils.progressbar import bar
 from datasets.cityscapes import logits2trainId, trainId2color, trainId2LabelId
+from heads.aspp import ASPP
+from backbone.resnet import ResNet18
+
 
 WARNING = lambda x: print('\033[1;31;2mWARNING: ' + x + '\033[0m')
 LOG = lambda x: print('\033[0;31;2m' + x + '\033[0m')
+
 
 # create model
 class MyNetwork(nn.Module):
@@ -35,9 +39,9 @@ class MyNetwork(nn.Module):
         self.val_loss = []
         self.summary_writer = SummaryWriter(log_dir=self.params.summary_dir)
 
-        # network structure
-        self.backbone = None
-        self.head = None
+        # default network structure
+        self.backbone = ResNet18(self.params.output_stride)
+        self.head = ASPP(self.backbone.output_channels, self.params)
         self.build_network()
 
         # set default loss
@@ -51,17 +55,11 @@ class MyNetwork(nn.Module):
 
         # initialize
         self.initialize()
+        self.build_dataloader()
 
         # load data
         self.load_checkpoint()
         self.load_model()
-
-    def build_network(self, backbone=None, head=None):
-        if backbone is not None and head is not None:
-            self.backbone = backbone
-            self.head = head
-
-        self.network = nn.Sequential(self.backbone, self.head).cuda()
 
     """######################"""
     """# Train and Validate #"""
@@ -78,10 +76,7 @@ class MyNetwork(nn.Module):
 
         # prepare data
         train_loss = 0
-        train_loader = DataLoader(self.datasets['train'],
-                                  batch_size=self.params.train_batch,
-                                  shuffle=self.params.shuffle,
-                                  num_workers=self.params.dataloader_workers)
+
         train_size = len(self.datasets['train'])
         if train_size % self.params.train_batch != 0:
             total_batch = train_size // self.params.train_batch + 1
@@ -89,7 +84,7 @@ class MyNetwork(nn.Module):
             total_batch = train_size // self.params.train_batch
 
         # train through dataset
-        for batch_idx, batch in enumerate(train_loader):
+        for batch_idx, batch in enumerate(self.train_loader):
             self.pb.click(batch_idx, total_batch)
             image, label = batch['image'], batch['label']
             image_cuda, label_cuda = image.cuda(), label.cuda()
@@ -134,10 +129,6 @@ class MyNetwork(nn.Module):
 
         # prepare data
         val_loss = 0
-        val_loader = DataLoader(self.datasets['val'],
-                                batch_size=self.params.val_batch,
-                                shuffle=self.params.shuffle,
-                                num_workers=self.params.dataloader_workers)
         val_size = len(self.datasets['val'])
         if val_size % self.params.val_batch != 0:
             total_batch = val_size // self.params.val_batch + 1
@@ -145,7 +136,7 @@ class MyNetwork(nn.Module):
             total_batch = val_size // self.params.val_batch
 
         # validate through dataset
-        for batch_idx, batch in enumerate(val_loader):
+        for batch_idx, batch in enumerate(self.val_loader):
             self.pb.click(batch_idx, total_batch)
             image, label = batch['image'], batch['label']
             image_cuda, label_cuda = image.cuda(), label.cuda()
@@ -224,9 +215,6 @@ class MyNetwork(nn.Module):
         self.network.eval()
 
         # prepare test data
-        test_loader = DataLoader(self.datasets['test'],
-                                 batch_size=self.params.test_batch,
-                                 shuffle=False, num_workers=self.params.dataloader_workers)
         test_size = len(self.datasets['test'])
         if test_size % self.params.test_batch != 0:
             total_batch = test_size // self.params.test_batch + 1
@@ -234,7 +222,7 @@ class MyNetwork(nn.Module):
             total_batch = test_size // self.params.test_batch
 
         # test for one epoch
-        for batch_idx, batch in enumerate(test_loader):
+        for batch_idx, batch in enumerate(self.test_loader):
             self.pb.click(batch_idx, total_batch)
             image, label, name = batch['image'], batch['label'], batch['label_name']
             image_cuda, label_cuda = image.cuda(), label.cuda()
@@ -322,7 +310,7 @@ class MyNetwork(nn.Module):
         """
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight)
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
@@ -355,10 +343,34 @@ class MyNetwork(nn.Module):
         plt.ylabel('Loss')
         plt.show()
 
+    def build_network(self, backbone=None, head=None):
+        if backbone is not None and head is not None:
+            self.backbone = backbone
+            self.head = head
 
-# """ TEST """
-# if __name__ == '__main__':
-#     params = CIFAR100_params()
-#     params.dataset_root = '/home/ubuntu/cifar100'
-#     net = MobileNetv2(params)
-#     net.save_checkpoint()
+        self.network = nn.Sequential(self.backbone, self.head).cuda()
+
+    def build_dataloader(self):
+        self.train_loader = DataLoader(self.datasets['train'],
+                                       batch_size=self.params.train_batch,
+                                       shuffle=self.params.shuffle,
+                                       num_workers=self.params.dataloader_workers)
+        self.test_loader = DataLoader(self.datasets['test'],
+                                      batch_size=self.params.test_batch,
+                                      shuffle=False, num_workers=self.params.dataloader_workers)
+        self.val_loader = DataLoader(self.datasets['val'],
+                                     batch_size=self.params.val_batch,
+                                     shuffle=self.params.shuffle,
+                                     num_workers=self.params.dataloader_workers)
+
+""" TEST """
+if __name__ == '__main__':
+    import utils.functions as fn
+    from config import Params
+    params = Params()
+    params.dataset_root = '/media/ubuntu/disk/cityscapes'
+    LOG('Creating Dataset and Transformation......')
+    datasets = fn.create_datasets(params)
+    LOG('Creation Succeed.\n')
+    net = MyNetwork(params, datasets)
+    net.Train()

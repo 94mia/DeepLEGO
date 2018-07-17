@@ -20,7 +20,7 @@ def create_train_dir(params):
                        --checkpoints
         the exp_folder is named by model_name + dataset_name
     """
-    experiment = params.model + '_' + params.dataset
+    experiment = 'models/' + params.model + '_' + params.dataset
     exp_dir = os.path.join(os.getcwd(), experiment)
     summary_dir = os.path.join(exp_dir, 'summaries/')
     checkpoint_dir = os.path.join(exp_dir, 'checkpoints/')

@@ -34,17 +34,21 @@ class ASPP_branch(nn.Module):
 
 
 class ASPP(nn.Module):
-    def __init__(self, in_channels, num_class):
+    def __init__(self, in_channels, params):
         super(ASPP, self).__init__()
 
-        self.branch1 = ASPP_branch(in_channels, 6, num_class)
-        self.branch2 = ASPP_branch(in_channels, 12, num_class)
-        self.branch3 = ASPP_branch(in_channels, 18, num_class)
-        self.branch4 = ASPP_branch(in_channels, 24, num_class)
+        self.branch1 = ASPP_branch(in_channels, 6, params.num_class)
+        self.branch2 = ASPP_branch(in_channels, 12, params.num_class)
+        self.branch3 = ASPP_branch(in_channels, 18, params.num_class)
+        self.branch4 = ASPP_branch(in_channels, 24, params.num_class)
+
+        self.upsample = nn.Upsample(scale_factor=params.output_stride, mode='bilinear',
+                                    align_corners=False)
 
     def forward(self, logits):
         x = logits[-1]
 
         x = self.branch1(x) + self.branch2(x) + self.branch3(x) + self.branch4(x)
+        x = self.upsample(x)
 
         return x

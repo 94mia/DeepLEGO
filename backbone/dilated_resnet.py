@@ -38,6 +38,7 @@ class DilatedResNet(nn.Module):
         self.stage7 = PlainBlock(self.in_channels, 512, dilation=2)
         self.stage8 = PlainBlock(self.in_channels, 512)
 
+        self.output_channels = 512
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

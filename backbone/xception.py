@@ -32,6 +32,8 @@ class Xception(nn.Module):
                                   DepthwiseSeparableConv(1536, 1536, 1, d5),
                                   DepthwiseSeparableConv(1536, 2048, 1, d5))
 
+        self.output_channels = 2048
+
     def forward(self, x):
         """
         Store all intermediate logits when network meets stride

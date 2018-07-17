@@ -268,3 +268,11 @@ def generate_txt(dataset_root, file):
                     print(line, file=f)
             else:
                 generate_txt(dataset_root, image_txt)
+
+
+if __name__ == '__main__':
+    from config import Params
+    import utils.functions as fn
+    pp = Params()
+    pp.dataset_root = '/media/ubuntu/disk/cityscapes'
+    datasets = fn.create_datasets(pp)

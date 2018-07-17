@@ -34,6 +34,8 @@ class ResNet(nn.Module):
         self.stage4 = self.conv_stage(block, 256, layers[2], s4, d4)
         self.stage5 = self.conv_stage(block, 512, layers[3], s5, d5)
 
+        self.output_channels = 512 if block == BasicBlock else 2048
+
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
