@@ -51,7 +51,7 @@ def create_datasets(params):
                  'val'  : transforms.Compose([Rescale(params.image_size),
                                               ToTensor()
                                               ]),
-                 'test' : transforms.Compose([Rescale(params.image_size),
+                 'test' : transforms.Compose([Rescale(params.rescale_size),
                                               ToTensor()
                                               ])}
 
