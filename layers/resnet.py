@@ -35,7 +35,7 @@ class BasicBlock(nn.Module):
 
         self.relu = nn.ReLU()
 
-        if in_channels != base_channels*self.expansion:
+        if in_channels != base_channels*self.expansion or stride != 1:
             self.shortcut = conv1x1(in_channels, base_channels*self.expansion, stride=stride)
         else:
             self.shortcut = None

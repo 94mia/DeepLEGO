@@ -3,7 +3,7 @@ from layers.resnet import Bottleneck, BasicBlock
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, output_stride=32):
+    def __init__(self, block, layers, output_stride=32, has_max_pool=True):
         super(ResNet, self).__init__()
 
         assert len(layers) == 4
@@ -28,8 +28,13 @@ class ResNet(nn.Module):
         max_pool = nn.MaxPool2d(kernel_size=3, stride=s2, padding=d2, dilation=d2)
         self.in_channels = 64
 
-        self.stage1 = nn.Sequential(conv1, bn1, relu, max_pool)
-        self.stage2 = self.conv_stage(block, 64,  layers[0])
+        if has_max_pool:
+            self.stage1 = nn.Sequential(conv1, bn1, relu, max_pool)
+            self.stage2 = self.conv_stage(block, 64, layers[0])
+        else:
+            self.stage1 = nn.Sequential(conv1, bn1, relu)
+            self.stage2 = self.conv_stage(block, 64, layers[0], s2, d2)
+
         self.stage3 = self.conv_stage(block, 128, layers[1], s3, d3)
         self.stage4 = self.conv_stage(block, 256, layers[2], s4, d4)
         self.stage5 = self.conv_stage(block, 512, layers[3], s5, d5)
@@ -82,40 +87,40 @@ class ResNet(nn.Module):
         return logits
 
 
-def ResNet18(output_stride=32):
+def ResNet18(output_stride=32, has_max_pool=True):
     """
     Construct a ResNet-18 model
     """
-    return ResNet(BasicBlock, [2, 2, 2, 2], output_stride)
+    return ResNet(BasicBlock, [2, 2, 2, 2], output_stride, has_max_pool)
 
 
-def ResNet34(output_stride=32):
+def ResNet34(output_stride=32, has_max_pool=True):
     """
     Construct a ResNet-34 model
     """
-    return ResNet(BasicBlock, [3, 4, 6, 3], output_stride)
+    return ResNet(BasicBlock, [3, 4, 6, 3], output_stride, has_max_pool)
 
 
-def ResNet50(output_stride=32):
+def ResNet50(output_stride=32, has_max_pool=True):
     """
     Construct a ResNet-50 model
     """
-    return ResNet(Bottleneck, [3, 4, 6, 3], output_stride)
+    return ResNet(Bottleneck, [3, 4, 6, 3], output_stride, has_max_pool)
 
 
-def ResNet101(output_stride=32):
+def ResNet101(output_stride=32, has_max_pool=True):
     """
     Construct a ResNet-101 model
     """
-    return ResNet(Bottleneck, [3, 4, 23, 3], output_stride)
+    return ResNet(Bottleneck, [3, 4, 23, 3], output_stride, has_max_pool)
 
 
-def ResNet152(output_stride=32):
+def ResNet152(output_stride=32, has_max_pool=True):
     """
     Construct a ResNet-152 model
     """
-    return ResNet(Bottleneck, [3, 8, 36, 3], output_stride)
+    return ResNet(Bottleneck, [3, 8, 36, 3], output_stride, has_max_pool)
 
 
 if __name__ == '__main__':
-    print(ResNet18(output_stride=16))
+    print(ResNet18(output_stride=16, has_max_pool=False))
