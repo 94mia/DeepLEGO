@@ -28,32 +28,23 @@ Folder `utils` stores some useful functions like a hand-made progressbar
 
 # Backbone Introduction
 
-Backbone networks are built depending on each semantic segmentation paper, all of them have no fc layer or global average
-    pooling layer thus classification task is not available.
-Usually, CNNs have output_stride=32 from pooling or strided convolutions, and these continuous stridings make CNNs have
-    the ability to against object shifts in spatial domain.
-Each backbone network can remove stridings top-down by setting output_stride in parameters as 16, 8, 4 or 2. When this
-    modification happens, the dilation in convolution blocks after removed striding blocks will be doubled, you can set
-    output_stride=16 in class Params defined in config.py and use print(ResNet18(params)) to see what has been changed
-Considering the slight difference of backbone network in different segmentation model, I am trying to make all networks
-    have the ability to be modified a little bit with flexibility, but usually papers in semantic segmentation uses
-    ResNet as backbone, thus many modification can only be applied in ResNet. For example, you can set
-    params.has_max_pool=False to disable the max pooling layer in ResNet while not in other backbones, also
-    HDC(Hybrid Dilated Convolution) and scSE are available on ResNet, if you have other modifications, feel free to
-    change the source code in the corresponding folder.
-Backbone can be a list or just a torch.nn.module, when backbone is a list that means some decoder part is in backbone
-    like ASPP+, please see head introduction below for more detail.
+Backbone networks are built depending on each semantic segmentation paper, all of them have no fc layer or global average pooling layer thus classification task is not available.
+    
+Usually, CNNs have output_stride=32 from pooling or strided convolutions, and these continuous stridings make CNNs have the ability to against object shifts in spatial domain.
+    
+Each backbone network can remove stridings top-down by setting output_stride in parameters as 16, 8, 4 or 2. When this  modification happens, the dilation in convolution blocks after removed striding blocks will be doubled, you can set output_stride=16 in class Params defined in config.py and use print(ResNet18(params)) to see what has been changed
+
+Considering the slight difference of backbone network in different segmentation model, I am trying to make all networks have the ability to be modified a little bit with flexibility, but usually papers in semantic segmentation uses ResNet as backbone, thus many modification can only be applied in ResNet. For example, you can set params.has_max_pool=False to disable the max pooling layer in ResNet while not in other backbones, also HDC(Hybrid Dilated Convolution) and scSE are available on ResNet, if you have other modifications, feel free to change the source code in the corresponding folder.
+
+Backbone can be a list or just a torch.nn.module, when backbone is a list that means some decoder part is in backbone like ASPP+, please see head introduction below for more detail.
 
 ------
 
 # Head Introduction
 
-Head modules are often the decoder of segmentation networks, they can be concatenate with different backbones, I am
-    working on adding more kinds of head module in the near future including SCSE, U-net decoder or even simple FCN
-    decoder.
-Some head modules have the ability to be embedded in backbone part, eg. ASPP+ module. This is a key method in
-    DeepLabv3+ where they combine dilated convolution network with encoder-decoder module and achieved SOTA performance.
-    Not all heads support this configuration, when using such module, please remember to set in_incoder=True.
+Head modules are often the decoder of segmentation networks, they can be concatenate with different backbones, I am working on adding more kinds of head module in the near future including SCSE, U-net decoder or even simple FCN decoder.
+
+Some head modules have the ability to be embedded in backbone part, eg. ASPP+ module. This is a key method in DeepLabv3+ where they combine dilated convolution network with encoder-decoder module and achieved SOTA performance. Not all heads support this configuration, when using such module, please remember to set in_incoder=True.
 
 ------
 
@@ -73,8 +64,8 @@ tensorboardX 1.2</br>
 # How to use?
 
 I'm sorry to place this part so below cause I thought you may need to finish reading useful tips above first.
-Currently the interface of this repo is still not stable and some combination of backbones and heads may not converge
-    well, I am trying to solve them in my spare time.
+Currently the interface of this repo is still not stable and some combination of backbones and heads may not converge well, I am trying to solve them in my spare time.
+
 So if you want to try this repo, make sure you install all dependencies and then you can try the following steps:
 
 1. Customize `config.py` depending on the paper or just your wish, be sure to set `dataset_root` to the right path
