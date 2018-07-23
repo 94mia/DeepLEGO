@@ -23,9 +23,10 @@ class BasicBlock(nn.Module):
 
     expansion = 1
 
-    def __init__(self, in_channels, base_channels, stride=1, dilation=1):
+    def __init__(self, in_channels, base_channels, stride=1, dilation=1, se_mode=None):
         super(BasicBlock, self).__init__()
         self.stride = stride
+        self.se_mode = se_mode
 
         self.conv1 = conv3x3(in_channels, base_channels, stride=stride, dilation=dilation)
         self.bn1 = nn.BatchNorm2d(base_channels)
@@ -40,6 +41,21 @@ class BasicBlock(nn.Module):
         else:
             self.shortcut = None
 
+        if se_mode is not None:
+            if se_mode % 2 == 0:  # 0 or 2
+                self.se1 = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+                                         nn.Conv2d(base_channels, base_channels//16, 1, bias=False),
+                                         nn.ReLU(),
+                                         nn.Conv2d(base_channels//16, base_channels, 1, bias=False),
+                                         nn.Sigmoid())
+            else:
+                self.se1 = None
+            if se_mode > 0:  # 0 or 1
+                self.se2 = nn.Sequential(nn.Conv2d(base_channels, 1, 1, bias=False),
+                                         nn.Sigmoid())
+            else:
+                self.se2 = None
+
     def forward(self, x):
         orig = x
 
@@ -49,6 +65,13 @@ class BasicBlock(nn.Module):
 
         x = self.conv2(x)
         x = self.bn2(x)
+
+        if self.se_mode == 0:
+            x = x*self.se1(x)
+        elif self.se_mode == 1:
+            x = x*self.se2(x)
+        elif self.se_mode == 2:
+            x = x*self.se1(x) + x*self.se2(x)
 
         if self.shortcut is not None:
             orig = self.shortcut(orig)
@@ -65,9 +88,10 @@ class Bottleneck(nn.Module):
 
     expansion = 4
 
-    def __init__(self, in_channels, base_channels, stride=1, dilation=1):
+    def __init__(self, in_channels, base_channels, stride=1, dilation=1, se_mode=None):
         super(Bottleneck, self).__init__()
         self.stride = stride
+        self.se_mode = se_mode
 
         self.conv1 = conv1x1(in_channels, base_channels)
         self.bn1 = nn.BatchNorm2d(base_channels)
@@ -75,8 +99,8 @@ class Bottleneck(nn.Module):
         self.conv2 = conv3x3(base_channels, base_channels, stride=stride, dilation=dilation)
         self.bn2 = nn.BatchNorm2d(base_channels)
 
-        self.conv3 = conv1x1(base_channels, base_channels*4)
-        self.bn3 = nn.BatchNorm2d(base_channels*4)
+        self.conv3 = conv1x1(base_channels, base_channels*self.expansion)
+        self.bn3 = nn.BatchNorm2d(base_channels*self.expansion)
 
         self.relu = nn.ReLU()
 
@@ -84,6 +108,23 @@ class Bottleneck(nn.Module):
             self.shortcut = conv1x1(in_channels, base_channels*self.expansion, stride=stride)
         else:
             self.shortcut = None
+
+        if se_mode is not None:
+            if se_mode % 2 == 0:  # 0 or 2
+                self.se1 = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+                                         nn.Conv2d(base_channels*self.expansion, base_channels*self.expansion//16, 1,
+                                                   bias=False),
+                                         nn.ReLU(),
+                                         nn.Conv2d(base_channels*self.expansion//16, base_channels*self.expansion, 1,
+                                                   bias=False),
+                                         nn.Sigmoid())
+            else:
+                self.se1 = None
+            if se_mode > 0:  # 0 or 1
+                self.se2 = nn.Sequential(nn.Conv2d(base_channels*self.expansion, 1, 1, bias=False),
+                                         nn.Sigmoid())
+            else:
+                self.se2 = None
 
     def forward(self, x):
         orig = x
@@ -98,6 +139,13 @@ class Bottleneck(nn.Module):
 
         x = self.conv3(x)
         x = self.bn3(x)
+
+        if self.se_mode == 0:
+            x = x*self.se1(x)
+        elif self.se_mode == 1:
+            x = x*self.se2(x)
+        elif self.se_mode == 2:
+            x = x*self.se1(x) + x*self.se2(x)
 
         if self.shortcut is not None:
             orig = self.shortcut(orig)

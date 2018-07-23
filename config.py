@@ -9,6 +9,8 @@ class Params():
         self.dataset = 'cityscapes'
         self.output_stride = 16
         self.down_sample_rate = 32  # classic down sample rate, DO NOT CHANGE!
+        self.se_mode = None  # Squeeze and Excitation mode, 0->cSE, 1-> sSE, 2->scSE
+        self.HDC = None  # Hybrid Dilated Convolution, type bool
 
         # dataset parameters
         self.rescale_size = 600  # rescale image when training

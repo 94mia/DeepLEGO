@@ -17,22 +17,25 @@ from layers.resnet import Bottleneck, BasicBlock
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, output_stride=32, has_max_pool=True):
+    def __init__(self, block, layers, params):
         super(ResNet, self).__init__()
 
         assert len(layers) == 4
-        assert output_stride in [2, 4, 8, 16, 32]
+        assert params.output_stride in [2, 4, 8, 16, 32]
 
-        s1 = 2 if output_stride % 2 == 0 else 1
+        s1 = 2 if params.output_stride % 2 == 0 else 1
         d1 = 2 if s1 == 1 else 1
-        s2 = 2 if output_stride % 4 == 0 else 1
+        s2 = 2 if params.output_stride % 4 == 0 else 1
         d2 = 2 * d1 if s2 == 1 else 1
-        s3 = 2 if output_stride % 8 == 0 else 1
+        s3 = 2 if params.output_stride % 8 == 0 else 1
         d3 = 2 * d2 if s3 == 1 else 1
-        s4 = 2 if output_stride % 16 == 0 else 1
+        s4 = 2 if params.output_stride % 16 == 0 else 1
         d4 = 2 * d3 if s4 == 1 else 1
-        s5 = 2 if output_stride % 32 == 0 else 1
+        s5 = 2 if params.output_stride % 32 == 0 else 1
         d5 = 2 * d4 if s5 == 1 else 1
+
+        if hasattr(params, 'HDC'):
+            self.hdc = params.HDC
 
         # little definition
         conv1 = nn.Conv2d(3, 64,
@@ -42,7 +45,7 @@ class ResNet(nn.Module):
         max_pool = nn.MaxPool2d(kernel_size=3, stride=s2, padding=d2, dilation=d2)
         self.in_channels = 64
 
-        if has_max_pool:
+        if params.has_max_pool:
             self.stage1 = nn.Sequential(conv1, bn1, relu, max_pool)
             self.stage2 = self.conv_stage(block, 64, layers[0])
         else:
@@ -56,12 +59,12 @@ class ResNet(nn.Module):
         self.output_channels = 512 if block == BasicBlock else 2048
 
         # weight initialization
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+        # for m in self.modules():
+        #     if isinstance(m, nn.Conv2d):
+        #         nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+        #     elif isinstance(m, nn.BatchNorm2d):
+        #         nn.init.constant_(m.weight, 1)
+        #         nn.init.constant_(m.bias, 0)
 
     def conv_stage(self, block, base_channels, n=1, stride=1, dilation=1):
         """Conv stage set up function
@@ -73,11 +76,19 @@ class ResNet(nn.Module):
             stride: no explanation
         """
         layers = []
-        layers.append(block(self.in_channels, base_channels, stride=stride, dilation=dilation))
-        self.in_channels = base_channels * block.expansion
-        for _ in range(n-1):
-            layers.append(block(self.in_channels, base_channels, dilation=dilation))
+        if self.hdc:
+            layers.append(block(self.in_channels, base_channels, stride=stride, dilation=1))
             self.in_channels = base_channels * block.expansion
+            rate = n // 3
+            for i in range(n - 1):
+                layers.append(block(self.in_channels, base_channels, dilation=i%rate+dilation-1))
+                self.in_channels = base_channels * block.expansion
+        else:
+            layers.append(block(self.in_channels, base_channels, stride=stride, dilation=dilation))
+            self.in_channels = base_channels * block.expansion
+            for _ in range(n-1):
+                layers.append(block(self.in_channels, base_channels, dilation=dilation))
+                self.in_channels = base_channels * block.expansion
 
         return nn.Sequential(*layers)
 
@@ -109,7 +120,7 @@ def ResNet18(params):
         params.has_max_pool = True
     params.output_channels = 512
 
-    return ResNet(BasicBlock, [2, 2, 2, 2], params.output_stride, params.has_max_pool)
+    return ResNet(BasicBlock, [2, 2, 2, 2], params)
 
 
 def ResNet34(params):
@@ -120,7 +131,7 @@ def ResNet34(params):
         params.has_max_pool = True
     params.output_channels = 512
 
-    return ResNet(BasicBlock, [3, 4, 6, 3], params.output_stride, params.has_max_pool)
+    return ResNet(BasicBlock, [3, 4, 6, 3], params)
 
 
 def ResNet50(params):
@@ -131,7 +142,7 @@ def ResNet50(params):
         params.has_max_pool = True
     params.output_channels = 2048
 
-    return ResNet(Bottleneck, [3, 4, 6, 3], params.output_stride, params.has_max_pool)
+    return ResNet(Bottleneck, [3, 4, 6, 3], params)
 
 
 def ResNet101(params):
@@ -142,7 +153,7 @@ def ResNet101(params):
         params.has_max_pool = True
     params.output_channels = 2048
 
-    return ResNet(Bottleneck, [3, 4, 23, 3], params.output_stride, params.has_max_pool)
+    return ResNet(Bottleneck, [3, 4, 23, 3], params)
 
 
 def ResNet152(params):
@@ -153,7 +164,7 @@ def ResNet152(params):
         params.has_max_pool = True
     params.output_channels = 2048
 
-    return ResNet(Bottleneck, [3, 8, 36, 3], params.output_stride, params.has_max_pool)
+    return ResNet(Bottleneck, [3, 8, 36, 3], params)
 
 
 # if __name__ == '__main__':
