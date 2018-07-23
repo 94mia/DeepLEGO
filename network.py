@@ -1,14 +1,11 @@
-import torch
 import torch.nn as nn
-import os
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
-import numpy as np
 import matplotlib.pyplot as plt
-from torch.utils.checkpoint import checkpoint_sequential
 
+from utils.functions import *
 from utils.progressbar import bar
-from datasets.cityscapes import logits2trainId, trainId2color, trainId2LabelId
+from datasets.cityscapes import logits2trainId, trainId2color, trainId2LabelId, create_datasets
 from heads.aspp import ASPP
 from backbone.resnet import ResNet18
 
@@ -27,10 +24,19 @@ class MyNetwork(nn.Module):
     """# Model Construction #"""
     """######################"""
 
-    def __init__(self, params, datasets):
+    def __init__(self, params, backbone=None, head=None):
         super(MyNetwork, self).__init__()
+
+        # initializing network parameters
         self.params = params
-        self.datasets = datasets
+        LOG('Network Configurations:\n')
+        print_config(params)
+
+        # creating network datasets
+        LOG('Creating Datasets and Transformations......')
+        self.datasets = create_datasets(params)
+        LOG('Creation Succeed.\n')
+
         self.pb = bar()  # hand-made progressbar
         self.epoch = 0
         self.init_epoch = 0
@@ -39,27 +45,40 @@ class MyNetwork(nn.Module):
         self.val_loss = []
         self.summary_writer = SummaryWriter(log_dir=self.params.summary_dir)
 
-        # default network structure
-        self.backbone = ResNet18(self.params.output_stride)
-        self.head = ASPP(self.backbone.output_channels, self.params)
+        # build network structure
+        self.backbone = backbone
+        self.head = head
+        LOG('Building and Initializing Model......')
         self.build_network()
+        LOG('Model Built.\n')
 
         # set default loss
         self.loss_fn = nn.CrossEntropyLoss(ignore_index=255)
 
         # set default optimizer
-        self.opt = torch.optim.RMSprop(self.network.parameters(),
+        self.opt = torch.optim.RMSprop(self.parameters(),
                                        lr=self.params.base_lr,
                                        momentum=self.params.momentum,
                                        weight_decay=self.params.weight_decay)
 
         # initialize
-        self.initialize()
         self.build_dataloader()
 
         # load data
         self.load_checkpoint()
         self.load_model()
+
+    def forward(self, x):
+        if isinstance(self.backbone, list):
+            logits = x
+            for net in self.backbone:
+                logits = net(logits)
+        else:
+            logits = self.backbone(x)
+
+        seg = self.head(logits)
+
+        return seg
 
     """######################"""
     """# Train and Validate #"""
@@ -72,7 +91,7 @@ class MyNetwork(nn.Module):
         print('Training......')
 
         # set mode train
-        self.network.train()
+        self.train()
 
         # prepare data
         train_loss = 0
@@ -90,11 +109,11 @@ class MyNetwork(nn.Module):
             image_cuda, label_cuda = image.cuda(), label.cuda()
 
             # checkpoint split
-            if self.params.should_split:
-                image_cuda.requires_grad_()
-                out = checkpoint_sequential(self.network, self.params.split, image_cuda)
-            else:
-                out = self.network(image_cuda)
+            # if self.params.should_split:
+            #     image_cuda.requires_grad_()
+            #     out = checkpoint_sequential(self.network, self.params.split, image_cuda)
+            # else:
+            out = self(image_cuda)
             loss = self.loss_fn(out, label_cuda)
 
             # optimize
@@ -122,10 +141,10 @@ class MyNetwork(nn.Module):
         Validate network in one epoch every m training epochs,
             m is defined in params.val_every
         """
-        print('Validating:')
+        print('Validating......')
 
         # set mode eval
-        self.network.eval()
+        self.eval()
 
         # prepare data
         val_loss = 0
@@ -142,11 +161,11 @@ class MyNetwork(nn.Module):
             image_cuda, label_cuda = image.cuda(), label.cuda()
 
             # checkpoint split
-            if self.params.should_split:
-                image_cuda.requires_grad_()
-                out = checkpoint_sequential(self.network, self.params.split, image_cuda)
-            else:
-                out = self.network(image_cuda)
+            # if self.params.should_split:
+            #     image_cuda.requires_grad_()
+            #     out = checkpoint_sequential(self.network, self.params.split, image_cuda)
+            # else:
+            out = self(image_cuda)
 
             loss = self.loss_fn(out, label_cuda)
 
@@ -209,10 +228,10 @@ class MyNetwork(nn.Module):
         """
         Test network on test set
         """
-        print('Testing:')
+        print('Testing......')
         # set mode eval
         torch.cuda.empty_cache()
-        self.network.eval()
+        self.eval()
 
         # prepare test data
         test_size = len(self.datasets['test'])
@@ -226,11 +245,7 @@ class MyNetwork(nn.Module):
             self.pb.click(batch_idx, total_batch)
             image, label, name = batch['image'], batch['label'], batch['label_name']
             image_cuda, label_cuda = image.cuda(), label.cuda()
-            if self.params.should_split:
-                image_cuda.requires_grad_()
-                out = checkpoint_sequential(self.network, self.params.split, image_cuda)
-            else:
-                out = self.network(image_cuda)
+            out = self(image_cuda)
 
             for i in range(self.params.test_batch):
                 idx = batch_idx*self.params.test_batch+i
@@ -251,10 +266,10 @@ class MyNetwork(nn.Module):
         save_dict = {'epoch'        :  self.epoch,
                      'train_loss'   :  self.train_loss,
                      'val_loss'     :  self.val_loss,
-                     'state_dict'   :  self.network.state_dict(),
+                     'state_dict'   :  self.state_dict(),
                      'optimizer'    :  self.opt.state_dict()}
         torch.save(save_dict, self.params.ckpt_dir+'Checkpoint_epoch_%d.pth.tar' % self.epoch)
-        print('Checkpoint saved')
+        LOG('Checkpoint saved')
 
     def load_checkpoint(self):
         """
@@ -271,7 +286,7 @@ class MyNetwork(nn.Module):
                 except:
                     self.train_loss = []
                     self.val_loss = []
-                self.network.load_state_dict(ckpt['state_dict'])
+                self.load_state_dict(ckpt['state_dict'])
                 self.opt.load_state_dict(ckpt['optimizer'])
                 LOG('Checkpoint Loaded!')
                 LOG('Current Epoch: %d' % self.epoch)
@@ -293,7 +308,7 @@ class MyNetwork(nn.Module):
                 try:
                     LOG('Loading Pre-trained Model at %s' % self.params.pre_trained_from)
                     pretrain = torch.load(self.params.pre_trained_from)
-                    self.network.load_state_dict(pretrain)
+                    self.load_state_dict(pretrain)
                     LOG('Pre-trained Model Loaded!')
                 except:
                     WARNING('Cannot load pre-trained model. Start training......')
@@ -344,11 +359,24 @@ class MyNetwork(nn.Module):
         plt.show()
 
     def build_network(self, backbone=None, head=None):
-        if backbone is not None and head is not None:
+        """
+        Build up network depend on backbone and head, default model is ResNet18+ASPP
+        """
+        if backbone is None:
+            if self.backbone is None:
+                self.backbone = ResNet18(self.params)
+        else:
             self.backbone = backbone
-            self.head = head
+        self.backbone = self.backbone.cuda()
 
-        self.network = nn.Sequential(self.backbone, self.head).cuda()
+        if head is None:
+            if self.head is None:
+                self.head = ASPP(self.params)
+        else:
+            self.head = head
+        self.head = self.head.cuda()
+
+        self.initialize()
 
     def build_dataloader(self):
         self.train_loader = DataLoader(self.datasets['train'],

@@ -1,3 +1,10 @@
+'''
+Re-implementation of decoder of Large Kernel Matters introduced in paper [1]
+
+Reference:
+[1] Large Kernel Matters -- Improve Semantic Segmentation by Global Convolutional Network
+    https://arxiv.org/abs/1703.02719
+'''
 import torch.nn as nn
 
 
@@ -65,14 +72,16 @@ class LargeKernelDecoder(nn.Module):
 
         WARNING: Encoder must have output_stride=32
     """
-    def __init__(self, num_class, k=15):
+    def __init__(self, params, k=15):
         super(LargeKernelDecoder, self).__init__()
 
-        self.num_class = num_class
+        assert params.output_stride == 32
+
+        self.num_class = params.num_class
         self.k = k
 
-        self.br = BR(num_class)
-        self.deconv = nn.ConvTranspose2d(num_class, num_class, 3, 2, 1, bias=False)
+        self.br = BR(params.num_class)
+        self.deconv = nn.ConvTranspose2d(params.num_class, params.num_class, 3, 2, 1, bias=False)
 
     def forward(self, logits):
         assert len(logits) >= 4

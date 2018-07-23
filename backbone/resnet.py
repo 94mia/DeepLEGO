@@ -1,3 +1,17 @@
+'''
+Re-implementation of ResNet introduced in paper [1]
+The structure of ResNet class is influenced by [2]
+The has_max_pool parameter is a flag for max pooling layer after the first 7x7 convolution.
+This max pooling is removed in paper [3]
+When using [3] as a decoder, please don't forget to set params.has_max_pool=False
+
+Reference:
+[1] Deep Residual Learning for Image Recognition
+    https://arxiv.org/abs/1512.03385
+[2] https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+[3] Large Kernel Matters -- Improve Semantic Segmentation by Global Convolutional Network
+    https://arxiv.org/abs/1703.02719
+'''
 import torch.nn as nn
 from layers.resnet import Bottleneck, BasicBlock
 
@@ -87,40 +101,60 @@ class ResNet(nn.Module):
         return logits
 
 
-def ResNet18(output_stride=32, has_max_pool=True):
+def ResNet18(params):
     """
     Construct a ResNet-18 model
     """
-    return ResNet(BasicBlock, [2, 2, 2, 2], output_stride, has_max_pool)
+    if not hasattr(params, 'has_max_pool'):
+        params.has_max_pool = True
+    params.output_channels = 512
+
+    return ResNet(BasicBlock, [2, 2, 2, 2], params.output_stride, params.has_max_pool)
 
 
-def ResNet34(output_stride=32, has_max_pool=True):
+def ResNet34(params):
     """
     Construct a ResNet-34 model
     """
-    return ResNet(BasicBlock, [3, 4, 6, 3], output_stride, has_max_pool)
+    if not hasattr(params, 'has_max_pool'):
+        params.has_max_pool = True
+    params.output_channels = 512
+
+    return ResNet(BasicBlock, [3, 4, 6, 3], params.output_stride, params.has_max_pool)
 
 
-def ResNet50(output_stride=32, has_max_pool=True):
+def ResNet50(params):
     """
     Construct a ResNet-50 model
     """
-    return ResNet(Bottleneck, [3, 4, 6, 3], output_stride, has_max_pool)
+    if not hasattr(params, 'has_max_pool'):
+        params.has_max_pool = True
+    params.output_channels = 2048
+
+    return ResNet(Bottleneck, [3, 4, 6, 3], params.output_stride, params.has_max_pool)
 
 
-def ResNet101(output_stride=32, has_max_pool=True):
+def ResNet101(params):
     """
     Construct a ResNet-101 model
     """
-    return ResNet(Bottleneck, [3, 4, 23, 3], output_stride, has_max_pool)
+    if not hasattr(params, 'has_max_pool'):
+        params.has_max_pool = True
+    params.output_channels = 2048
+
+    return ResNet(Bottleneck, [3, 4, 23, 3], params.output_stride, params.has_max_pool)
 
 
-def ResNet152(output_stride=32, has_max_pool=True):
+def ResNet152(params):
     """
     Construct a ResNet-152 model
     """
-    return ResNet(Bottleneck, [3, 8, 36, 3], output_stride, has_max_pool)
+    if not hasattr(params, 'has_max_pool'):
+        params.has_max_pool = True
+    params.output_channels = 2048
+
+    return ResNet(Bottleneck, [3, 8, 36, 3], params.output_stride, params.has_max_pool)
 
 
-if __name__ == '__main__':
-    print(ResNet18(output_stride=16, has_max_pool=False))
+# if __name__ == '__main__':
+#     print(ResNet101()

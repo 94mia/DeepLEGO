@@ -1,3 +1,13 @@
+'''
+Re-implementation of ASPP+ module introduced in paper [1]
+The structure of this implementation also refers to the Caffe implementation in [2]
+
+Reference:
+[1] DeepLab: Semantic Image Segmentation with Deep Convolutional Nets, Atrous Convolution, and Fully Connected CRFs:
+    https://arxiv.org/abs/1606.00915
+[2] SoonminHwang/caffe-segmentation/prototxt:
+    https://github.com/SoonminHwang/caffe-segmentation/tree/master/prototxt
+'''
 import torch.nn as nn
 
 
@@ -34,13 +44,20 @@ class ASPP_branch(nn.Module):
 
 
 class ASPP(nn.Module):
-    def __init__(self, in_channels, params):
+    def __init__(self, params):
         super(ASPP, self).__init__()
 
-        self.branch1 = ASPP_branch(in_channels, 6, params.num_class)
-        self.branch2 = ASPP_branch(in_channels, 12, params.num_class)
-        self.branch3 = ASPP_branch(in_channels, 18, params.num_class)
-        self.branch4 = ASPP_branch(in_channels, 24, params.num_class)
+        if hasattr(params, 'dilation'):
+            if len(params.dilation) == 4:
+                dilation = params.dilation
+            else:
+                dilation = (6, 12, 18, 24)
+        else:
+            dilation = (6, 12, 18, 24)
+        self.branch1 = ASPP_branch(params.output_channels, dilation[0], params.num_class)
+        self.branch2 = ASPP_branch(params.output_channels, dilation[1], params.num_class)
+        self.branch3 = ASPP_branch(params.output_channels, dilation[2], params.num_class)
+        self.branch4 = ASPP_branch(params.output_channels, dilation[3], params.num_class)
 
         self.upsample = nn.Upsample(scale_factor=params.output_stride, mode='bilinear',
                                     align_corners=False)

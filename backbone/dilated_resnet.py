@@ -1,8 +1,14 @@
+'''
+Re-implementation of Dilated ResNet in paper [1]
+
+Reference:
+[1] Dilated Residual Networks
+    https://arxiv.org/abs/1705.09914
+'''
 import torch.nn as nn
 from layers.resnet import BasicBlock
 from layers.dilated_resnet import PlainBlock
-"""
-"""
+
 
 class DilatedResNet(nn.Module):
     def __init__(self, layers, output_stride=8):
@@ -89,18 +95,18 @@ class DilatedResNet(nn.Module):
         return logits
 
 
-def DilatedResNet26():
+def DilatedResNet26(params):
     """
     Construct a Dilated ResNet-26 model
     """
-    return DilatedResNet([2, 2, 2, 2])
+    return DilatedResNet([2, 2, 2, 2], params.output_stride)
 
 
-def DilatedResNet42():
+def DilatedResNet42(params):
     """
     Construct a Dilated ResNet-42 model
     """
-    return DilatedResNet([3, 4, 6, 3])
+    return DilatedResNet([3, 4, 6, 3], params.output_stride)
 
 
 if __name__ == '__main__':

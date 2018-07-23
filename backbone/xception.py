@@ -1,23 +1,36 @@
+'''
+Re-implementation of Xception network backbone, this backbone is not from original paper [1]
+but is a modified version from paper [2], it can be used with ASPP+ [3] and become the encoder of
+DeepLabv3+ [2] model or just directly use it as a feature extractor
+
+Reference:
+[1] Xception: Deep Learning with Depthwise Separable Convolutions
+    https://arxiv.org/abs/1610.02357
+[2] DeepLabv3+: Encoder-Decoder with Atrous Separable Convolution for Semantic Segmentation
+    https://arxiv.org/abs/1802.02611v2
+[3] Rethinking Atrous Convolution for Semantic Image Segmentation:
+    https://arxiv.org/abs/1706.05587
+'''
 import torch.nn as nn
 from layers.xception import DepthwiseSeparableConv, ResidualBlock
 from layers.resnet import conv3x3_bn_relu
 
 
 class Xception(nn.Module):
-    def __init__(self, output_stride=16):
+    def __init__(self, params):
         super(Xception, self).__init__()
 
-        assert output_stride in [2, 4, 8, 16, 32]
+        assert params.output_stride in [2, 4, 8, 16, 32]
 
-        s1 = 2 if output_stride % 2 == 0 else 1
+        s1 = 2 if params.output_stride % 2 == 0 else 1
         d1 = 2 if s1 == 1 else 1
-        s2 = 2 if output_stride % 4 == 0 else 1
+        s2 = 2 if params.output_stride % 4 == 0 else 1
         d2 = 2 * d1 if s2 == 1 else 1
-        s3 = 2 if output_stride % 8 == 0 else 1
+        s3 = 2 if params.output_stride % 8 == 0 else 1
         d3 = 2 * d2 if s3 == 1 else 1
-        s4 = 2 if output_stride % 16 == 0 else 1
+        s4 = 2 if params.output_stride % 16 == 0 else 1
         d4 = 2 * d3 if s4 == 1 else 1
-        s5 = 2 if output_stride % 32 == 0 else 1
+        s5 = 2 if params.output_stride % 32 == 0 else 1
         d5 = 2 * d4 if s5 == 1 else 1
 
         # because stride conv in Residual Block is the last conv
@@ -56,13 +69,13 @@ class Xception(nn.Module):
         return logits
 
 
-def Xception65(output_stride=16):
+def Xception65(params):
     """
     Construct Xception network modified in DeepLabv3+
     """
-    return Xception(output_stride)
+    return Xception(params)
 
 
-if __name__ == '__main__':
-    print(Xception65())
+# if __name__ == '__main__':
+    # print(Xception65())
 

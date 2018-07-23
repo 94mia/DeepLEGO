@@ -1,16 +1,19 @@
-import cv2
-import torch
+'''
+Definition and some transformation functions for Cityscapes dataset
+The following definition are copied from github repository:
+  mcordts/cityscapesScripts/cityscapesscripts/helpers/labels.py
+'''
 from collections import namedtuple
-import numpy as np
+from torchvision import transforms
 import os
 from torch.utils.data import Dataset
+from utils.functions import generate_txt
+from utils.transformations import *
 
 """###############"""
 """# Definitions #"""
 """###############"""
-# following definition are copied from github repository:
-#   mcordts/cityscapesScripts/cityscapesscripts/helpers/labels.py
-# a label and all meta information
+
 Label = namedtuple( 'Label' , [
 
     'name'        , # The identifier of this label, e.g. 'car', 'person', ... .
@@ -144,11 +147,11 @@ def trainId2color(dataset_root, id_map, name):
 
 def trainId2LabelId(dataset_root, train_id, name):
     """
-        Transform trainId map into labelId map
-        :param dataset_root: the path to dataset root, eg. '/media/ubuntu/disk/cityscapes'
-        :param id_map: torch tensor
-        :param name: name of image, eg. 'gtFine/test/leverkusen/leverkusen_000027_000019_gtFine_labelTrainIds.png'
-        """
+    Transform trainId map into labelId map
+    :param dataset_root: the path to dataset root, eg. '/media/ubuntu/disk/cityscapes'
+    :param id_map: torch tensor
+    :param name: name of image, eg. 'gtFine/test/leverkusen/leverkusen_000027_000019_gtFine_labelTrainIds.png'
+    """
     assert len(train_id.shape) == 2, 'Id_map must be a 2-D tensor of shape (h, w) where h, w = H, W / output_stride'
     h, w = train_id.shape
     label_id = np.zeros((h, w, 3))
@@ -230,49 +233,36 @@ class Cityscapes(Dataset):
         return sample
 
 
-def generate_txt(dataset_root, file):
+def create_datasets(params):
     """
-    Generate txt files that not exists but required in both training and testing
+    Create datasets of Cityscapes for training, testing and validating
 
-    :param dataset_root: the path to dataset root, eg. '/media/ubuntu/disk/cityscapes'
-    :param file: txt file need to generate
+    :return datasets: a python dictionary includes three datasets
     """
-    with open(os.path.join(dataset_root, file), 'w') as f:
-        # get mode and folder
-        if 'train' in file:
-            mode = 'train'
-        elif 'test' in file:
-            mode = 'test'
-        else:
-            mode = 'val'
-        folder = 'leftImg8bit' if 'Image' in file else 'gtFine'
+    phase = ['train', 'val', 'test']
+    # if params.dataset_root is not None and not os.path.exists(params.dataset_root):
+    #     raise ValueError('Dataset not exists!')
 
-        path = os.path.join(os.path.join(dataset_root, folder), mode)
+    transform = {'train': transforms.Compose([RandomCrop(params.image_size),
+                                              RandomHorizontalFlip(),
+                                              ToTensor()
+                                              ]),
+                 'val'  : transforms.Compose([RandomCrop(params.image_size),
+                                              ToTensor()
+                                              ]),
+                 'test' : transforms.Compose([ToTensor()
+                                              ])}
 
-        assert os.path.exists(path), 'Cannot find %s set in folder %s' % (mode, folder)
+    # file_dir = {p: os.path.join(params.dataset_root, p) for p in phase}
 
-        # collect images or labels
-        if 'Images' in file:
-            cities = os.listdir(path)
-            for city in cities:
-                # write them into txt
-                for image in os.listdir(os.path.join(path, city)):
-                    print(folder + '/' + mode + '/' + city + '/' + image, file=f)
-        else:
-            image_txt = mode+'Images.txt'
-            if image_txt in os.listdir(dataset_root):
-                for line in open(os.path.join(dataset_root, image_txt)):
-                    line = line.strip()
-                    line = line.replace('leftImg8bit/', 'gtFine/')
-                    line = line.replace('_leftImg8bit', '_gtFine_labelTrainIds')
-                    print(line, file=f)
-            else:
-                generate_txt(dataset_root, image_txt)
+    # datasets = {Cityscapes(file_dir[p], mode=p, transforms=transform[p]) for p in phase}
+    datasets = {p: Cityscapes(params.dataset_root, mode=p, transforms=transform[p]) for p in phase}
+
+    return datasets
 
 
 if __name__ == '__main__':
     from config import Params
-    import utils.functions as fn
     pp = Params()
     pp.dataset_root = '/media/ubuntu/disk/cityscapes'
-    datasets = fn.create_datasets(pp)
+    datasets = create_datasets(pp)
