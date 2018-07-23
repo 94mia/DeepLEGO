@@ -6,7 +6,7 @@ Current Available Networks and Structures are:
 ```
 ResNet, Xception, Dilated ResNet, DeepLabv3+
 
-ASPP, ASPP+, DeepLabv3+ decoder, Large Kernel Matters Decoder, SPP in PSPNet
+ASPP, ASPP+, DeepLabv3+ decoder, Large Kernel Matters Decoder, SPP in PSPNet, Vortex Pooling, HDC
 ```
 
 ------
