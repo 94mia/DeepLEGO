@@ -38,22 +38,26 @@ class ASPP_plus(nn.Module):
         else:
             self.in_encoder = in_encoder
 
+        # add output_channels parameter
+        if self.in_encoder:
+            self.output_channels = 256
+
         self.conv11 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 1, bias=False),
-                                     nn.BatchNorm2d(256))
+                                     nn.BatchNorm2d(256)).cuda()
         self.conv33_1 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 3,
                                                 padding=dilation[0], dilation=dilation[0], bias=False),
-                                      nn.BatchNorm2d(256))
+                                      nn.BatchNorm2d(256)).cuda()
         self.conv33_2 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 3,
                                                 padding=dilation[1], dilation=dilation[1], bias=False),
-                                      nn.BatchNorm2d(256))
+                                      nn.BatchNorm2d(256)).cuda()
         self.conv33_3 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 3,
                                                 padding=dilation[2], dilation=dilation[2], bias=False),
-                                      nn.BatchNorm2d(256))
+                                      nn.BatchNorm2d(256)).cuda()
         self.concate_conv = nn.Sequential(nn.Conv2d(256*5, 256, 1, bias=False),
-                                      nn.BatchNorm2d(256))
-        self.class_conv = nn.Sequential(nn.Conv2d(256, self.params.num_class, 1),
-                                        nn.Upsample(scale_factor=self.params.output_stride, mode='bilinear',
-                                                    align_corners=False))
+                                      nn.BatchNorm2d(256)).cuda()
+        self.class_conv = nn.Sequential(nn.Conv2d(256, params.num_class, 1),
+                                        nn.Upsample(scale_factor=params.output_stride, mode='bilinear',
+                                                    align_corners=False)).cuda()
 
     def forward(self, logits):
         x = logits[-1]
@@ -63,7 +67,7 @@ class ASPP_plus(nn.Module):
         conv33_3 = self.conv33_3(x)
 
         # image pool and upsample
-        image_pool = F.avg_pool2d(x.shape[2:])
+        image_pool = F.avg_pool2d(x, x.shape[2:])
         image_pool = self.conv11(image_pool)
         upsample = F.upsample(image_pool, size=x.shape[2:], mode='bilinear', align_corners=False)
 

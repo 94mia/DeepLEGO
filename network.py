@@ -24,7 +24,7 @@ class MyNetwork(nn.Module):
     """# Model Construction #"""
     """######################"""
 
-    def __init__(self, params, backbone=None, head=None):
+    def __init__(self, params, module=None):
         super(MyNetwork, self).__init__()
 
         # initializing network parameters
@@ -43,11 +43,12 @@ class MyNetwork(nn.Module):
         self.ckpt_flag = False
         self.train_loss = []
         self.val_loss = []
-        self.summary_writer = SummaryWriter(log_dir=self.params.summary_dir)
+        if self.params.summary:
+            self.summary_writer = SummaryWriter(log_dir=self.params.summary_dir)
 
         # build network structure
-        self.backbone = backbone
-        self.head = head
+        self.backbone = module[:-1]
+        self.head = module[-1]
         LOG('Building and Initializing Model......')
         self.build_network()
         LOG('Model Built.\n')
@@ -56,7 +57,8 @@ class MyNetwork(nn.Module):
         self.loss_fn = nn.CrossEntropyLoss(ignore_index=255)
 
         # set default optimizer
-        self.opt = torch.optim.RMSprop(self.parameters(),
+        self.opt = torch.optim.RMSprop([{'params': self.head.parameters(), 'lr_mult': self.params.head_lr_mult},
+                                        {'params': self.backbone_params, 'lr_mult': self.params.backbone_lr_mult}],
                                        lr=self.params.base_lr,
                                        momentum=self.params.momentum,
                                        weight_decay=self.params.weight_decay)
@@ -127,14 +129,16 @@ class MyNetwork(nn.Module):
             # record first loss
             if self.train_loss == []:
                 self.train_loss.append(train_loss)
-                self.summary_writer.add_scalar('loss/train_loss', train_loss, 0)
+                if self.params.summary:
+                    self.summary_writer.add_scalar('loss/train_loss', train_loss, 0)
 
         self.pb.close()
         train_loss /= total_batch
         self.train_loss.append(train_loss)
 
         # add to summary
-        self.summary_writer.add_scalar('loss/train_loss', train_loss, self.epoch)
+        if self.params.summary:
+            self.summary_writer.add_scalar('loss/train_loss', train_loss, self.epoch)
 
     def val_one_epoch(self):
         """
@@ -174,14 +178,16 @@ class MyNetwork(nn.Module):
             # record first loss
             if self.val_loss == []:
                 self.val_loss.append(val_loss)
-                self.summary_writer.add_scalar('loss/val_loss', val_loss, 0)
+                if self.params.summary:
+                    self.summary_writer.add_scalar('loss/val_loss', val_loss, 0)
 
         self.pb.close()
         val_loss /= total_batch
         self.val_loss.append(val_loss)
 
         # add to summary
-        self.summary_writer.add_scalar('loss/val_loss', val_loss, self.epoch)
+        if self.params.summary:
+            self.summary_writer.add_scalar('loss/val_loss', val_loss, self.epoch)
 
 
     def Train(self):
@@ -255,8 +261,9 @@ class MyNetwork(nn.Module):
                 image_orig = image[i].numpy().transpose(1, 2, 0)
                 image_orig = image_orig*255
                 image_orig = image_orig.astype(np.uint8)
-                self.summary_writer.add_image('test/img_%d/orig' % idx, image_orig, idx)
-                self.summary_writer.add_image('test/img_%d/seg' % idx, color_map, idx)
+                if self.params.summary:
+                    self.summary_writer.add_image('test/img_%d/orig' % idx, image_orig, idx)
+                    self.summary_writer.add_image('test/img_%d/seg' % idx, color_map, idx)
 
     """##########################"""
     """# Model Save and Restore #"""
@@ -309,11 +316,11 @@ class MyNetwork(nn.Module):
                     LOG('Loading Pre-trained Model at %s' % self.params.pre_trained_from)
                     pretrain = torch.load(self.params.pre_trained_from)
                     self.load_state_dict(pretrain)
-                    LOG('Pre-trained Model Loaded!')
+                    LOG('Pre-trained Model Loaded!\n')
                 except:
-                    WARNING('Cannot load pre-trained model. Start training......')
+                    WARNING('Cannot load pre-trained model. Start training......\n')
             else:
-                WARNING('Pre-trained model do not exits. Start training......')
+                WARNING('Pre-trained model do not exits. Start training......\n')
 
     """#############"""
     """# Utilities #"""
@@ -331,6 +338,12 @@ class MyNetwork(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+        if isinstance(self.backbone, list):
+            self.backbone_params = []
+            for m in self.backbone:
+                self.backbone_params.extend(list(m.parameters()))
+        else:
+            self.backbone_params = self.backbone.parameters
 
     def adjust_lr(self):
         """
@@ -340,7 +353,8 @@ class MyNetwork(nn.Module):
         for param_group in self.opt.param_groups:
             param_group['lr'] = learning_rate
         print('Change learning rate into %f' % (learning_rate))
-        self.summary_writer.add_scalar('learning_rate', learning_rate, self.epoch)
+        if self.params.summary:
+            self.summary_writer.add_scalar('learning_rate', learning_rate, self.epoch)
 
     def plot_curve(self):
         """
@@ -367,14 +381,13 @@ class MyNetwork(nn.Module):
                 self.backbone = ResNet18(self.params)
         else:
             self.backbone = backbone
-        self.backbone = self.backbone.cuda()
 
         if head is None:
             if self.head is None:
                 self.head = ASPP(self.params)
         else:
             self.head = head
-        self.head = self.head.cuda()
+        self.cuda()
 
         self.initialize()
 

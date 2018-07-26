@@ -16,17 +16,17 @@ class DeepLabv3_plus_decoder(nn.Module):
     Decoder of DeepLabv3+
         Note that the input logits can consists either 2 logits or 4/5 logits respectively
     """
-    def __init__(self, params):
+    def __init__(self, params, **kwargs):
         super(DeepLabv3_plus_decoder, self).__init__()
 
         self.upsample = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False)
 
         self.conv11 = nn.Sequential(nn.Conv2d(params.output_channels, 48, 1, bias=False),
                                     nn.BatchNorm2d(48),
-                                    nn.ReLU())
+                                    nn.ReLU()).cuda()
         self.conv33 = nn.Sequential(nn.Conv2d(params.output_channels+48, params.num_class, 3, padding=1, bias=False),
                                     nn.BatchNorm2d(params.num_class),
-                                    nn.ReLU())
+                                    nn.ReLU()).cuda()
     def forward(self, logits):
         if len(logits) == 2:
             low = logits[0]

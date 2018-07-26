@@ -14,11 +14,11 @@ class GCN(nn.Module):
 
         pad = (k-1) // 2
 
-        self.conv1 = nn.Sequential(nn.Conv2d(in_channels, num_class, kernel_size=(1, k), padding=(1, pad), bias=False),
-                                   nn.Conv2d(num_class, num_class, kernel_size=(k, 1), padding=(pad, 1), bias=False))
+        self.conv1 = nn.Sequential(nn.Conv2d(in_channels, num_class, kernel_size=(1, k), padding=(0, pad), bias=False),
+                                   nn.Conv2d(num_class, num_class, kernel_size=(k, 1), padding=(pad, 0), bias=False))
 
-        self.conv2 = nn.Sequential(nn.Conv2d(in_channels, num_class, kernel_size=(k, 1), padding=(pad, 1), bias=False),
-                                   nn.Conv2d(num_class, num_class, kernel_size=(1, k), padding=(1, pad), bias=False))
+        self.conv2 = nn.Sequential(nn.Conv2d(in_channels, num_class, kernel_size=(k, 1), padding=(pad, 0), bias=False),
+                                   nn.Conv2d(num_class, num_class, kernel_size=(1, k), padding=(0, pad), bias=False))
 
     def forward(self, x):
 
@@ -90,12 +90,12 @@ class LargeKernelDecoder(nn.Module):
         x2 = logits[-2]
         x3 = logits[-3]
         x4 = logits[-4]
-        output_size = [x4.shape[2]*2, x4.shape[3]*2]
+        output_size = [x4.shape[2]*4, x4.shape[3]*4]
 
-        branch1 = GCN_BR_BR_Deconv(x1.shape[1], self.num_class, self.k)
-        branch2 = GCN_BR_BR_Deconv(x2.shape[1], self.num_class, self.k)
-        branch3 = GCN_BR_BR_Deconv(x3.shape[1], self.num_class, self.k)
-        branch4 = GCN_BR_BR_Deconv(x4.shape[1], self.num_class, self.k)
+        branch1 = GCN_BR_BR_Deconv(x1.shape[1], self.num_class, self.k).cuda()
+        branch2 = GCN_BR_BR_Deconv(x2.shape[1], self.num_class, self.k).cuda()
+        branch3 = GCN_BR_BR_Deconv(x3.shape[1], self.num_class, self.k).cuda()
+        branch4 = GCN_BR_BR_Deconv(x4.shape[1], self.num_class, self.k).cuda()
 
         x = branch1(x1)
         x = branch2(x2, x)

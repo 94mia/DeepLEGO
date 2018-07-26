@@ -46,15 +46,15 @@ class ResNet(nn.Module):
         self.in_channels = 64
 
         if params.has_max_pool:
-            self.stage1 = nn.Sequential(conv1, bn1, relu, max_pool)
-            self.stage2 = self.conv_stage(block, 64, layers[0])
+            self.stage1 = nn.Sequential(conv1, bn1, relu, max_pool).cuda()
+            self.stage2 = self.conv_stage(block, 64, layers[0]).cuda()
         else:
-            self.stage1 = nn.Sequential(conv1, bn1, relu)
-            self.stage2 = self.conv_stage(block, 64, layers[0], s2, d2)
+            self.stage1 = nn.Sequential(conv1, bn1, relu).cuda()
+            self.stage2 = self.conv_stage(block, 64, layers[0], s2, d2).cuda()
 
-        self.stage3 = self.conv_stage(block, 128, layers[1], s3, d3)
-        self.stage4 = self.conv_stage(block, 256, layers[2], s4, d4)
-        self.stage5 = self.conv_stage(block, 512, layers[3], s5, d5)
+        self.stage3 = self.conv_stage(block, 128, layers[1], s3, d3).cuda()
+        self.stage4 = self.conv_stage(block, 256, layers[2], s4, d4).cuda()
+        self.stage5 = self.conv_stage(block, 512, layers[3], s5, d5).cuda()
 
         self.output_channels = 512 if block == BasicBlock else 2048
 
@@ -76,12 +76,11 @@ class ResNet(nn.Module):
             stride: no explanation
         """
         layers = []
-        if self.hdc:
-            layers.append(block(self.in_channels, base_channels, stride=stride, dilation=1))
+        if self.hdc and dilation>1:
+            layers.append(block(self.in_channels, base_channels, stride=stride, dilation=dilation-1))
             self.in_channels = base_channels * block.expansion
-            rate = n // 3
-            for i in range(n - 1):
-                layers.append(block(self.in_channels, base_channels, dilation=i%rate+dilation-1))
+            for i in range(1, n):
+                layers.append(block(self.in_channels, base_channels, dilation=i%3+dilation-1))
                 self.in_channels = base_channels * block.expansion
         else:
             layers.append(block(self.in_channels, base_channels, stride=stride, dilation=dilation))
@@ -112,60 +111,57 @@ class ResNet(nn.Module):
         return logits
 
 
-def ResNet18(params):
+def ResNet18(params, **kwargs):
     """
     Construct a ResNet-18 model
     """
     if not hasattr(params, 'has_max_pool'):
         params.has_max_pool = True
-    params.output_channels = 512
 
     return ResNet(BasicBlock, [2, 2, 2, 2], params)
 
 
-def ResNet34(params):
+def ResNet34(params, **kwargs):
     """
     Construct a ResNet-34 model
     """
     if not hasattr(params, 'has_max_pool'):
         params.has_max_pool = True
-    params.output_channels = 512
 
     return ResNet(BasicBlock, [3, 4, 6, 3], params)
 
 
-def ResNet50(params):
+def ResNet50(params, **kwargs):
     """
     Construct a ResNet-50 model
     """
     if not hasattr(params, 'has_max_pool'):
         params.has_max_pool = True
-    params.output_channels = 2048
 
     return ResNet(Bottleneck, [3, 4, 6, 3], params)
 
 
-def ResNet101(params):
+def ResNet101(params, **kwargs):
     """
     Construct a ResNet-101 model
     """
     if not hasattr(params, 'has_max_pool'):
         params.has_max_pool = True
-    params.output_channels = 2048
 
     return ResNet(Bottleneck, [3, 4, 23, 3], params)
 
 
-def ResNet152(params):
+def ResNet152(params, **kwargs):
     """
     Construct a ResNet-152 model
     """
     if not hasattr(params, 'has_max_pool'):
         params.has_max_pool = True
-    params.output_channels = 2048
 
     return ResNet(Bottleneck, [3, 8, 36, 3], params)
 
 
 # if __name__ == '__main__':
-#     print(ResNet101()
+    # from config import Params
+    # print(ResNet101(Params()))
+    # print(__dict__)

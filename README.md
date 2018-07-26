@@ -98,6 +98,7 @@ After the training, tensorboard is also available to visualize training procedur
 - [ ] debug all structures
 - [ ] add multi-grid and HDC to solve gridding
 - [ ] make lr_mult and decay_mult changeable for backbone and head
+- [ ] transfer ImageNet pre-trained model into current network
 
 ------
 
