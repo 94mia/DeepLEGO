@@ -42,8 +42,10 @@ class ASPP_plus(nn.Module):
         if self.in_encoder:
             self.output_channels = 256
 
-        self.conv11 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 1, bias=False),
-                                     nn.BatchNorm2d(256)).cuda()
+        self.conv11_1 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 1, bias=False),
+                                      nn.BatchNorm2d(256)).cuda()
+        self.conv11_2 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 1, bias=False),
+                                      nn.BatchNorm2d(256)).cuda()
         self.conv33_1 = nn.Sequential(nn.Conv2d(params.output_channels, 256, 3,
                                                 padding=dilation[0], dilation=dilation[0], bias=False),
                                       nn.BatchNorm2d(256)).cuda()
@@ -61,14 +63,14 @@ class ASPP_plus(nn.Module):
 
     def forward(self, logits):
         x = logits[-1]
-        conv11 = self.conv11(x)
+        conv11 = self.conv11_1(x)
         conv33_1 = self.conv33_1(x)
         conv33_2 = self.conv33_2(x)
         conv33_3 = self.conv33_3(x)
 
         # image pool and upsample
         image_pool = F.avg_pool2d(x, x.shape[2:])
-        image_pool = self.conv11(image_pool)
+        image_pool = self.conv11_2(image_pool)
         upsample = F.upsample(image_pool, size=x.shape[2:], mode='bilinear', align_corners=False)
 
         # concatenate

@@ -71,12 +71,9 @@ class MyNetwork(nn.Module):
         self.load_model()
 
     def forward(self, x):
-        if isinstance(self.backbone, list):
-            logits = x
-            for net in self.backbone:
-                logits = net(logits)
-        else:
-            logits = self.backbone(x)
+        logits = x
+        for net in self.backbone:
+            logits = net(logits)
 
         seg = self.head(logits)
 
@@ -93,7 +90,9 @@ class MyNetwork(nn.Module):
         print('Training......')
 
         # set mode train
-        self.train()
+        for bb in self.backbone:
+            bb.train()
+        self.head.train()
 
         # prepare data
         train_loss = 0
@@ -148,7 +147,9 @@ class MyNetwork(nn.Module):
         print('Validating......')
 
         # set mode eval
-        self.eval()
+        for bb in self.backbone:
+            bb.eval()
+        self.head.eval()
 
         # prepare data
         val_loss = 0
@@ -338,12 +339,10 @@ class MyNetwork(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
-        if isinstance(self.backbone, list):
-            self.backbone_params = []
-            for m in self.backbone:
-                self.backbone_params.extend(list(m.parameters()))
-        else:
-            self.backbone_params = self.backbone.parameters
+
+        self.backbone_params = []
+        for m in self.backbone:
+            self.backbone_params.extend(list(m.parameters()))
 
     def adjust_lr(self):
         """
@@ -378,7 +377,7 @@ class MyNetwork(nn.Module):
         """
         if backbone is None:
             if self.backbone is None:
-                self.backbone = ResNet18(self.params)
+                self.backbone = [ResNet18(self.params)]
         else:
             self.backbone = backbone
 

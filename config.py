@@ -26,25 +26,25 @@ class Params():
         self.dataloader_workers = 12
         self.shuffle = True  # if shuffle data when training
         self.train_batch = 4
-        self.val_batch = 1
+        self.val_batch = 2
         self.test_batch = 1
 
         # train parameters
         self.num_epoch = 150
-        self.base_lr = 0.0001
+        self.base_lr = 0.0025
         self.power = 0.9  # lr decay power
         self.head_lr_mult = 1
         self.backbone_lr_mult = 1
         self.momentum = 0.9
         self.weight_decay = 0.0005
         self.should_val = True
-        self.val_every = 2  # how often will we evaluate model on val set
+        self.val_every = 1  # how often will we evaluate model on val set
         self.display = 1  # how often will we show train result
 
         # model restore parameters
         self.resume_from = None  # None for train from scratch
         self.pre_trained_from = None  # None for train from scratch
-        self.should_save = True
+        self.should_save = False
         self.save_every = 10  # how often will we save checkpoint
 
         # create training dir

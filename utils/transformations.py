@@ -1,6 +1,10 @@
 import cv2
 import numpy as np
 import torch
+import random
+import math
+import torchvision.transforms.functional as F
+from PIL import Image
 
 
 class Rescale(object):
@@ -109,5 +113,55 @@ class RandomCrop(object):
         label = label[top: top + new_h, left: left + new_w]
 
         sample['image'], sample['label'] = image, label
+
+        return sample
+
+
+class RandomResizedCrop(object):
+    """
+    Randomly crop image and label with random scale (default: of 0.5 to 2.0) and
+        given size with the original aspect ratio.
+    For memory saving and computation efficiency, an input is not rescaled into a
+        random size and crop the random part of input with size (size, size).
+    First, the cropped area with be calculated and the crop_size will be set
+        as size/scale.
+    Then randomly crop a piece of input with size (crop_size, crop_size).
+    Finally, cropped piece will be resize into (size, size)
+
+    :param size: expected output size of each edge
+    :param scale: range of size of the origin size cropped
+    :param interpolation: Default: BILINEAR, the definition of interpolation is:
+            NEAREST = NONE = 0
+            LANCZOS = ANTIALIAS = 1
+            BILINEAR = LINEAR = 2
+            BICUBIC = CUBIC = 3
+            BOX = 4
+            HAMMING = 5
+    """
+    def __init__(self, size, scale=(0.5, 2.0), interpolation=2):
+        self.size = size
+        self.interpolation = interpolation
+        self.scale = scale
+
+    def __call__(self, sample):
+        image, label = sample['image'], sample['label']
+        image = Image.fromarray(image)
+        label  =Image.fromarray(label)
+
+        # get crop size
+        scale = random.uniform(*self.scale)
+        crop_size = int(self.size/scale)
+
+        # get crop parameters
+        i = random.randint(0, image.size[1] - crop_size)
+        j = random.randint(0, image.size[0] - crop_size)
+
+        # crop and resize
+        image = F.crop(image, i, j, crop_size, crop_size)
+        label = F.crop(label, i, j, crop_size, crop_size)
+        image = F.resize(image, self.size, self.interpolation)
+        label = F.resize(label, self.size, self.interpolation)
+
+        sample['image'], sample['label'] = np.array(image), np.array(label)
 
         return sample

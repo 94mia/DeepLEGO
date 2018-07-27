@@ -36,7 +36,7 @@ Each backbone network can remove stridings top-down by setting output_stride in 
 
 Considering the slight difference of backbone network in different segmentation model, I am trying to make all networks have the ability to be modified a little bit with flexibility, but usually papers in semantic segmentation uses ResNet as backbone, thus many modification can only be applied in ResNet. For example, you can set params.has_max_pool=False to disable the max pooling layer in ResNet while not in other backbones, also HDC(Hybrid Dilated Convolution) and scSE are available on ResNet, if you have other modifications, feel free to change the source code in the corresponding folder.
 
-Backbone can be a list or just a torch.nn.module, when backbone is a list that means some decoder part is in backbone like ASPP+, please see head introduction below for more detail.
+Backbone is always a list, even if it has only one module.
 
 ------
 
@@ -86,6 +86,7 @@ After the training, tensorboard is also available to visualize training procedur
 | 7.16 | add Xception backbone, ASPP, ASPP+, cityscapes dataset |
 | 7.20 | add DeepLabv3+, PSPNet, Large Kernel Matters, config.py. network.py |
 | 7.23 | add vortex pooling, scSE in ResNet, fix many bugs, rearrange many many interfaces and so on |
+| 7.26 | fix DeepLabv3+ bugs, change network interface |
 
 -------
 

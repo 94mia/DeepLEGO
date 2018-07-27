@@ -243,11 +243,11 @@ def create_datasets(params):
     # if params.dataset_root is not None and not os.path.exists(params.dataset_root):
     #     raise ValueError('Dataset not exists!')
 
-    transform = {'train': transforms.Compose([RandomCrop(params.image_size),
+    transform = {'train': transforms.Compose([RandomResizedCrop(params.image_size, scale=(0.5, 2.0)),
                                               RandomHorizontalFlip(),
                                               ToTensor()
                                               ]),
-                 'val'  : transforms.Compose([RandomCrop(params.image_size),
+                 'val'  : transforms.Compose([RandomResizedCrop(params.image_size, scale=(0.5, 2.0)),
                                               ToTensor()
                                               ]),
                  'test' : transforms.Compose([ToTensor()

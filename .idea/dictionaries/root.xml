@@ -2,6 +2,7 @@
   <dictionary name="root">
     <words>
       <w>aspp</w>
+      <w>bilinear</w>
       <w>cityscapes</w>
       <w>conv</w>
       <w>convolutional</w>

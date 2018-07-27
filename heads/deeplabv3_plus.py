@@ -24,9 +24,16 @@ class DeepLabv3_plus_decoder(nn.Module):
         self.conv11 = nn.Sequential(nn.Conv2d(params.output_channels, 48, 1, bias=False),
                                     nn.BatchNorm2d(48),
                                     nn.ReLU()).cuda()
-        self.conv33 = nn.Sequential(nn.Conv2d(params.output_channels+48, params.num_class, 3, padding=1, bias=False),
+        self.conv33 = nn.Sequential(nn.Conv2d(params.output_channels+48, 256, 3, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 256, 3, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, params.num_class, 3, padding=1, bias=False),
                                     nn.BatchNorm2d(params.num_class),
-                                    nn.ReLU()).cuda()
+                                    nn.ReLU()
+                                    ).cuda()
     def forward(self, logits):
         if len(logits) == 2:
             low = logits[0]
